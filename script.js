@@ -1,7 +1,8 @@
-// Mobile Navigation Toggle
+// Mobile Navigation Toggle with improved touch handling
 const navToggle = document.querySelector('.nav-toggle');
 const navMenu = document.querySelector('.nav-menu');
 
+// Improved mobile navigation
 navToggle.addEventListener('click', () => {
     navMenu.classList.toggle('active');
     
@@ -19,6 +20,18 @@ navToggle.addEventListener('click', () => {
     });
 });
 
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!navToggle.contains(e.target) && !navMenu.contains(e.target)) {
+        navMenu.classList.remove('active');
+        const bars = navToggle.querySelectorAll('.bar');
+        bars.forEach(bar => {
+            bar.style.transform = 'none';
+            bar.style.opacity = '1';
+        });
+    }
+});
+
 // Close mobile menu when clicking on a link
 document.querySelectorAll('.nav-menu a').forEach(link => {
     link.addEventListener('click', () => {
@@ -31,7 +44,7 @@ document.querySelectorAll('.nav-menu a').forEach(link => {
     });
 });
 
-// Navbar background on scroll
+// Navbar background on scroll with mobile optimization
 window.addEventListener('scroll', () => {
     const navbar = document.querySelector('.navbar');
     if (window.scrollY > 100) {
@@ -43,13 +56,15 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Smooth scrolling for navigation links
+// Smooth scrolling for navigation links with mobile offset
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute('href'));
         if (target) {
-            const offsetTop = target.offsetTop - 80; // Account for fixed navbar
+            // Adjust offset for mobile
+            const isMobile = window.innerWidth <= 768;
+            const offsetTop = target.offsetTop - (isMobile ? 100 : 80);
             window.scrollTo({
                 top: offsetTop,
                 behavior: 'smooth'
@@ -58,7 +73,9 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Animate elements on scroll
+// Enhanced mobile animations with reduced motion support
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
 const observerOptions = {
     threshold: 0.1,
     rootMargin: '0px 0px -50px 0px'
@@ -66,7 +83,7 @@ const observerOptions = {
 
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && !prefersReducedMotion.matches) {
             entry.target.style.opacity = '1';
             entry.target.style.transform = 'translateY(0)';
         }
@@ -80,12 +97,12 @@ document.addEventListener('DOMContentLoaded', () => {
     animateElements.forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        el.style.transition = prefersReducedMotion.matches ? 'none' : 'opacity 0.6s ease, transform 0.6s ease';
         observer.observe(el);
     });
 });
 
-// Form handling
+// Form handling with mobile optimization
 const appointmentForm = document.getElementById('appointmentForm');
 if (appointmentForm) {
     appointmentForm.addEventListener('submit', function(e) {
@@ -103,7 +120,7 @@ if (appointmentForm) {
     });
 }
 
-// Notification system with French messages
+// Enhanced notification system for mobile
 function showNotification(message, type = 'info') {
     // Remove existing notifications
     const existingNotification = document.querySelector('.notification');
@@ -117,23 +134,24 @@ function showNotification(message, type = 'info') {
     notification.innerHTML = `
         <div class="notification-content">
             <span class="notification-message">${message}</span>
-            <button class="notification-close">&times;</button>
+            <button class="notification-close" aria-label="Fermer">&times;</button>
         </div>
     `;
     
-    // Add styles
+    // Mobile-optimized styles
+    const isMobile = window.innerWidth <= 768;
     notification.style.cssText = `
         position: fixed;
-        top: 100px;
-        right: 20px;
+        top: ${isMobile ? '80px' : '100px'};
+        ${isMobile ? 'left: 10px; right: 10px;' : 'right: 20px;'}
         background: ${type === 'success' ? '#2E7D32' : '#1976D2'};
         color: white;
         padding: 1rem 1.5rem;
         border-radius: 10px;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         z-index: 10000;
-        max-width: 400px;
-        animation: slideInRight 0.3s ease;
+        max-width: ${isMobile ? 'none' : '400px'};
+        animation: ${prefersReducedMotion.matches ? 'none' : 'slideInRight 0.3s ease'};
     `;
     
     // Add animation styles
@@ -163,12 +181,27 @@ function showNotification(message, type = 'info') {
             color: white;
             font-size: 1.5rem;
             cursor: pointer;
-            padding: 0;
+            padding: 0.5rem;
             line-height: 1;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
         }
         
         .notification-close:hover {
-            opacity: 0.8;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .notification-close {
+                min-width: 40px;
+                min-height: 40px;
+                font-size: 1.3rem;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -190,109 +223,117 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Counter animation for stats
-function animateCounters() {
-    const counters = document.querySelectorAll('.stat-number');
-    
-    counters.forEach(counter => {
-        const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
-        const increment = target / 100;
-        let current = 0;
-        
-        const updateCounter = () => {
-            if (current < target) {
-                current += increment;
-                counter.textContent = Math.ceil(current) + (counter.textContent.includes('+') ? '+' : '') + 
-                                   (counter.textContent.includes('%') ? '%' : '');
-                requestAnimationFrame(updateCounter);
-            } else {
-                counter.textContent = target + (counter.textContent.includes('+') ? '+' : '') + 
-                                   (counter.textContent.includes('%') ? '%' : '');
-            }
-        };
-        
-        updateCounter();
-    });
-}
-
-// Trigger counter animation when stats section is visible
-const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            animateCounters();
-            statsObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.5 });
-
-const statsSection = document.querySelector('.hero-stats');
-if (statsSection) {
-    statsObserver.observe(statsSection);
-}
-
-// Parallax effect for hero section
+// Mobile-optimized parallax effect
 window.addEventListener('scroll', () => {
-    const scrolled = window.pageYOffset;
-    const hero = document.querySelector('.hero');
-    if (hero) {
-        const rate = scrolled * -0.5;
-        hero.style.transform = `translateY(${rate}px)`;
+    if (!prefersReducedMotion.matches) {
+        const scrolled = window.pageYOffset;
+        const hero = document.querySelector('.hero');
+        if (hero && window.innerWidth > 768) {
+            const rate = scrolled * -0.5;
+            hero.style.transform = `translateY(${rate}px)`;
+        }
     }
 });
 
-// Service cards hover effect
+// Enhanced mobile touch interactions
 document.querySelectorAll('.service-card').forEach(card => {
-    card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-10px) scale(1.02)';
+    card.addEventListener('touchstart', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(0.98)';
+        }
     });
     
-    card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0) scale(1)';
+    card.addEventListener('touchend', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(1)';
+        }
     });
+    
+    // Desktop hover effects
+    if (window.innerWidth > 768) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-10px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    }
 });
 
-// Testimonial cards hover effect
+// Mobile-optimized testimonial cards
 document.querySelectorAll('.testimonial-card').forEach(card => {
-    card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-5px) scale(1.01)';
+    card.addEventListener('touchstart', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(0.98)';
+        }
     });
     
-    card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0) scale(1)';
+    card.addEventListener('touchend', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(1)';
+        }
     });
+    
+    // Desktop hover effects
+    if (window.innerWidth > 768) {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.01)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    }
 });
 
-// Button click effects
+// Enhanced button interactions for mobile
 document.querySelectorAll('.btn').forEach(button => {
-    button.addEventListener('click', function(e) {
-        // Create ripple effect
-        const ripple = document.createElement('span');
-        const rect = this.getBoundingClientRect();
-        const size = Math.max(rect.width, rect.height);
-        const x = e.clientX - rect.left - size / 2;
-        const y = e.clientY - rect.top - size / 2;
-        
-        ripple.style.cssText = `
-            position: absolute;
-            width: ${size}px;
-            height: ${size}px;
-            left: ${x}px;
-            top: ${y}px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            transform: scale(0);
-            animation: ripple 0.6s linear;
-            pointer-events: none;
-        `;
-        
-        this.style.position = 'relative';
-        this.style.overflow = 'hidden';
-        this.appendChild(ripple);
-        
-        setTimeout(() => {
-            ripple.remove();
-        }, 600);
+    // Touch feedback for mobile
+    button.addEventListener('touchstart', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(0.95)';
+        }
     });
+    
+    button.addEventListener('touchend', function() {
+        if (window.innerWidth <= 768) {
+            this.style.transform = 'scale(1)';
+        }
+    });
+    
+    // Desktop click effects
+    if (window.innerWidth > 768) {
+        button.addEventListener('click', function(e) {
+            // Create ripple effect
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                position: absolute;
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 50%;
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+            
+            this.style.position = 'relative';
+            this.style.overflow = 'hidden';
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    }
 });
 
 // Add ripple animation
@@ -307,19 +348,22 @@ rippleStyle.textContent = `
 `;
 document.head.appendChild(rippleStyle);
 
-// Loading animation
+// Mobile-optimized loading animation
 window.addEventListener('load', () => {
-    document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s ease';
-    
-    setTimeout(() => {
-        document.body.style.opacity = '1';
-    }, 100);
+    if (!prefersReducedMotion.matches) {
+        document.body.style.opacity = '0';
+        document.body.style.transition = 'opacity 0.5s ease';
+        
+        setTimeout(() => {
+            document.body.style.opacity = '1';
+        }, 100);
+    }
 });
 
-// Back to top button
+// Enhanced back to top button for mobile
 const backToTopBtn = document.createElement('button');
 backToTopBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+backToTopBtn.setAttribute('aria-label', 'Retour en haut');
 backToTopBtn.style.cssText = `
     position: fixed;
     bottom: 30px;
@@ -338,6 +382,8 @@ backToTopBtn.style.cssText = `
     z-index: 1000;
     transition: all 0.3s ease;
     box-shadow: 0 5px 15px rgba(46, 125, 50, 0.3);
+    min-width: 44px;
+    min-height: 44px;
 `;
 
 backToTopBtn.addEventListener('click', () => {
@@ -347,15 +393,31 @@ backToTopBtn.addEventListener('click', () => {
     });
 });
 
-backToTopBtn.addEventListener('mouseenter', function() {
-    this.style.transform = 'translateY(-3px)';
-    this.style.boxShadow = '0 8px 25px rgba(46, 125, 50, 0.4)';
+// Mobile touch feedback for back to top button
+backToTopBtn.addEventListener('touchstart', function() {
+    if (window.innerWidth <= 768) {
+        this.style.transform = 'scale(0.9)';
+    }
 });
 
-backToTopBtn.addEventListener('mouseleave', function() {
-    this.style.transform = 'translateY(0)';
-    this.style.boxShadow = '0 5px 15px rgba(46, 125, 50, 0.3)';
+backToTopBtn.addEventListener('touchend', function() {
+    if (window.innerWidth <= 768) {
+        this.style.transform = 'scale(1)';
+    }
 });
+
+// Desktop hover effects for back to top button
+if (window.innerWidth > 768) {
+    backToTopBtn.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-3px)';
+        this.style.boxShadow = '0 8px 25px rgba(46, 125, 50, 0.4)';
+    });
+
+    backToTopBtn.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+        this.style.boxShadow = '0 5px 15px rgba(46, 125, 50, 0.3)';
+    });
+}
 
 document.body.appendChild(backToTopBtn);
 
@@ -374,7 +436,7 @@ document.querySelectorAll('.service-icon').forEach(icon => {
     icon.title = serviceName;
 });
 
-// Add loading states to buttons
+// Mobile-optimized loading states for buttons
 document.querySelectorAll('.btn-primary').forEach(button => {
     button.addEventListener('click', function() {
         if (this.textContent.includes('Prendre Rendez-vous')) {
@@ -390,4 +452,28 @@ document.querySelectorAll('.btn-primary').forEach(button => {
     });
 });
 
-console.log('Clinique Dentaire Sourire Éclatant - Page d\'accueil professionnelle chargée avec succès !'); 
+// Handle orientation change for mobile
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        // Recalculate any layout-dependent elements
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.style.transition = 'none';
+            setTimeout(() => {
+                navbar.style.transition = 'all 0.3s ease';
+            }, 100);
+        }
+    }, 100);
+});
+
+// Prevent zoom on double tap for mobile
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+
+console.log('Clinique Dentaire Sourire Éclatant - Page d\'accueil professionnelle mobile-optimisée chargée avec succès !'); 
